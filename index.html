@@ -1,0 +1,2149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Obrolin</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#833AB4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  :root{
+    --wa-dark-green: #833AB4;
+    --wa-teal-green: #C13584;
+    --wa-light-green: #F77737;
+    --wa-bubble-out: #FFE3EE;
+    --wa-bubble-in: #FFFFFF;
+    --wa-bg-chat: #FBF3F6;
+    --wa-bg-panel: #FFFFFF;
+    --wa-border: #F0E4EA;
+    --wa-text-primary: #1A1418;
+    --wa-text-secondary: #7A6B75;
+    --wa-hover: #FAF1F5;
+    --wa-selected: #F7E9F0;
+    --wa-danger: #EA4335;
+    --brand-gradient: linear-gradient(135deg, #405DE6 0%, #833AB4 30%, #C13584 55%, #E1306C 75%, #F77737 100%);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#EADCE3;
+    color:var(--wa-text-primary);
+    overflow:hidden;
+  }
+  #app{height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;}
+
+  /* ===== AUTH SCREEN ===== */
+  .auth-wrap{
+    width:100%;height:100%;
+    background:var(--brand-gradient);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .auth-card{
+    background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+    width:100%;max-width:400px;padding:36px 32px;
+    animation:pop .35s ease;
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+  .auth-logo{
+    width:60px;height:60px;border-radius:19px;
+    background:var(--brand-gradient);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
+    box-shadow:0 8px 20px rgba(193,53,132,.35);
+  }
+  .auth-logo svg{width:30px;height:30px;fill:#fff;}
+  .auth-card h1{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px;}
+  .auth-card p.sub{text-align:center;color:var(--wa-text-secondary);font-size:13.5px;margin-bottom:24px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--wa-text-secondary);margin-bottom:5px;}
+  .field input{
+    width:100%;padding:11px 13px;border:1.5px solid var(--wa-border);border-radius:9px;
+    font-size:14.5px;font-family:inherit;outline:none;transition:border-color .15s;
+    background:#FAFAFA;
+  }
+  .field input:focus{border-color:var(--wa-teal-green);background:#fff;}
+  .btn-primary{
+    width:100%;padding:12px;border:none;border-radius:9px;background:var(--wa-teal-green);
+    color:#fff;font-weight:600;font-size:14.5px;cursor:pointer;transition:background .15s;
+    margin-top:4px;
+  }
+  .btn-primary:hover{background:var(--wa-dark-green);}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+  .divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--wa-text-secondary);font-size:12px;}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--wa-border);}
+  .btn-google{
+    width:100%;padding:11px;border:1.5px solid var(--wa-border);border-radius:9px;background:#fff;
+    display:flex;align-items:center;justify-content:center;gap:10px;font-weight:600;font-size:14px;
+    cursor:pointer;transition:background .15s;color:var(--wa-text-primary);
+  }
+  .btn-google:hover{background:var(--wa-hover);}
+  .auth-switch{text-align:center;margin-top:18px;font-size:13.5px;color:var(--wa-text-secondary);}
+  .auth-switch a{color:var(--wa-teal-green);font-weight:600;cursor:pointer;text-decoration:none;}
+  .auth-err{
+    background:#FDECEA;color:var(--wa-danger);font-size:12.5px;padding:9px 12px;border-radius:8px;
+    margin-bottom:14px;display:none;
+  }
+
+  /* ===== MAIN CHAT LAYOUT ===== */
+  .chat-app{width:100%;height:100%;display:flex;background:var(--wa-bg-chat);}
+  .sidebar{
+    width:400px;min-width:320px;max-width:420px;background:var(--wa-bg-panel);
+    display:flex;flex-direction:column;border-right:1px solid var(--wa-border);
+  }
+  .sb-header{
+    height:60px;background:#F7EEF3;display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;flex-shrink:0;
+  }
+  .avatar{
+    width:40px;height:40px;border-radius:50%;background:var(--brand-gradient);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:15px;
+    flex-shrink:0;overflow:hidden;cursor:pointer;
+  }
+  .avatar.small{width:36px;height:36px;font-size:13px;}
+  .sb-header-actions{display:flex;gap:6px;}
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%;border:none;background:transparent;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:var(--wa-text-secondary);transition:background .15s;
+  }
+  .icon-btn:hover{background:var(--wa-hover);}
+  .icon-btn svg{width:20px;height:20px;fill:currentColor;}
+  .sb-search{padding:8px 12px;flex-shrink:0;}
+  .sb-search-box{
+    background:#F7EEF3;border-radius:9px;display:flex;align-items:center;padding:8px 12px;gap:12px;
+  }
+  .sb-search-box svg{width:16px;height:16px;fill:var(--wa-text-secondary);flex-shrink:0;}
+  .sb-search-box input{border:none;background:transparent;outline:none;font-size:13.5px;width:100%;font-family:inherit;}
+  .chat-list{flex:1;overflow-y:auto;}
+  .chat-item{
+    display:flex;align-items:center;gap:13px;padding:11px 16px;cursor:pointer;transition:background .1s;
+    border-bottom:1px solid #F5EDF1;
+  }
+  .chat-item:hover{background:var(--wa-hover);}
+  .chat-item.active{background:var(--wa-selected);}
+  .chat-item-body{flex:1;min-width:0;}
+  .chat-item-top{display:flex;justify-content:space-between;align-items:baseline;}
+  .chat-item-name{font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .chat-item-time{font-size:11.5px;color:var(--wa-text-secondary);flex-shrink:0;margin-left:6px;}
+  .chat-item-msg{font-size:13px;color:var(--wa-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}
+  .chat-item-menu-btn{flex-shrink:0;color:var(--wa-text-secondary);opacity:0;transition:opacity .12s;}
+  .chat-item:hover .chat-item-menu-btn{opacity:1;}
+  .empty-list{padding:40px 24px;text-align:center;color:var(--wa-text-secondary);font-size:13.5px;line-height:1.6;}
+  .avatar-wrap{position:relative;display:inline-flex;flex-shrink:0;}
+  .online-dot{position:absolute;bottom:0;right:0;width:11px;height:11px;border-radius:50%;background:#31D158;border:2px solid #fff;}
+  .rec-dot{width:11px;height:11px;border-radius:50%;background:var(--wa-danger);flex-shrink:0;animation:recPulse 1.1s ease-in-out infinite;}
+  @keyframes recPulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .bubble{position:relative;}
+  .msg-menu-btn{
+    position:absolute;top:2px;right:2px;width:22px;height:22px;border:none;border-radius:50%;
+    background:rgba(0,0,0,.08);color:var(--wa-text-secondary);display:none;align-items:center;justify-content:center;
+    cursor:pointer;padding:0;
+  }
+  .bubble:hover .msg-menu-btn{display:flex;}
+
+  .chat-main{flex:1;display:flex;flex-direction:column;position:relative;}
+  .chat-placeholder{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:#F7EEF3;color:var(--wa-text-secondary);
+  }
+  .chat-placeholder svg{width:200px;opacity:.5;margin-bottom:24px;}
+  .chat-placeholder h2{font-weight:400;font-size:26px;color:#5C4A54;margin-bottom:8px;}
+  .chat-placeholder p{font-size:13.5px;max-width:400px;text-align:center;}
+
+  .chat-header{
+    height:60px;background:#F7EEF3;display:flex;align-items:center;gap:12px;padding:0 16px;
+    flex-shrink:0;border-bottom:1px solid var(--wa-border);
+  }
+  .chat-header-name{font-weight:500;font-size:15.5px;}
+  .chat-header-sub{font-size:12.5px;color:var(--wa-text-secondary);}
+  .chat-header-info{flex:1;min-width:0;cursor:pointer;}
+
+  .messages-area{
+    flex:1;overflow-y:auto;padding:16px 8%;
+    background-color:var(--wa-bg-chat);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='%23000000' fill-opacity='0.02'%3E%3Cpath d='M50 30 Q60 20 70 30 Q80 40 70 50 Q60 60 50 50 Q40 40 50 30Z'/%3E%3C/g%3E%3C/svg%3E");
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .msg-row{display:flex;margin-top:6px;}
+  .msg-row.out{justify-content:flex-end;}
+  .bubble{
+    max-width:65%;padding:6px 9px 8px 9px;border-radius:8px;position:relative;
+    box-shadow:0 1px .5px rgba(0,0,0,.13);font-size:14.2px;line-height:1.4;
+  }
+  .bubble.in{background:var(--wa-bubble-in);border-top-left-radius:0;}
+  .bubble.out{background:var(--wa-bubble-out);border-top-right-radius:0;}
+  .bubble .sender-name{font-size:12.5px;font-weight:700;margin-bottom:2px;color:var(--wa-teal-green);}
+  .bubble .msg-text{white-space:pre-wrap;word-break:break-word;}
+  .bubble .msg-time{font-size:10.5px;color:var(--wa-text-secondary);float:right;margin-left:8px;margin-top:2px;}
+  .day-sep{text-align:center;margin:14px 0;}
+  .day-sep span{background:#F5E4EF;color:#8A7480;font-size:12px;padding:5px 11px;border-radius:8px;}
+
+  .composer{
+    display:flex;align-items:center;gap:10px;padding:10px 16px;background:#F7EEF3;flex-shrink:0;
+  }
+  .composer input{
+    flex:1;border:none;border-radius:22px;padding:11px 16px;font-size:14.5px;outline:none;font-family:inherit;
+    background:#fff;
+  }
+  .send-btn{
+    width:42px;height:42px;border-radius:50%;border:none;background:var(--wa-teal-green);color:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s;
+  }
+  .send-btn:hover{background:var(--wa-dark-green);}
+  .send-btn svg{width:19px;height:19px;fill:#fff;margin-left:2px;}
+
+  /* ===== MODAL ===== */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+    z-index:100;
+  }
+  .modal{
+    background:#fff;border-radius:14px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal-header{
+    padding:18px 20px;border-bottom:1px solid var(--wa-border);display:flex;align-items:center;justify-content:space-between;
+  }
+  .modal-header h3{font-size:16.5px;font-weight:600;}
+  .modal-body{padding:16px 20px;overflow-y:auto;flex:1;}
+  .modal-footer{padding:14px 20px;border-top:1px solid var(--wa-border);display:flex;justify-content:flex-end;gap:8px;}
+  .btn-sm{padding:9px 18px;border-radius:8px;border:none;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .btn-sm.ghost{background:transparent;color:var(--wa-text-secondary);}
+  .btn-sm.ghost:hover{background:var(--wa-hover);}
+  .btn-sm.solid{background:var(--wa-teal-green);color:#fff;}
+  .btn-sm.solid:hover{background:var(--wa-dark-green);}
+  .btn-sm.solid:disabled{opacity:.5;cursor:not-allowed;}
+  .tabs{display:flex;gap:6px;margin-bottom:14px;background:#F7EEF3;padding:3px;border-radius:9px;}
+  .tab-btn{flex:1;padding:8px;border:none;border-radius:7px;background:transparent;font-size:13px;font-weight:600;
+    cursor:pointer;color:var(--wa-text-secondary);}
+  .tab-btn.active{background:#fff;color:var(--wa-text-primary);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .user-pick-item{display:flex;align-items:center;gap:11px;padding:9px 6px;border-radius:8px;cursor:pointer;}
+  .user-pick-item:hover{background:var(--wa-hover);}
+  .user-pick-item.selected{background:#FCE4F0;}
+  .user-pick-item .name{font-size:14px;font-weight:500;}
+  .user-pick-item .email{font-size:12px;color:var(--wa-text-secondary);}
+  .chip{
+    display:inline-flex;align-items:center;gap:5px;background:#FCE4F0;color:var(--wa-dark-green);
+    padding:4px 8px 4px 10px;border-radius:14px;font-size:12.5px;font-weight:600;margin:2px 4px 2px 0;
+  }
+  .chip button{border:none;background:transparent;cursor:pointer;color:var(--wa-dark-green);font-size:14px;line-height:1;}
+  .chips-wrap{margin-bottom:10px;min-height:0;}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111B21;color:#fff;
+    padding:11px 20px;border-radius:9px;font-size:13.5px;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.3);
+    animation:toastIn .2s ease;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+
+  .loading-screen{
+    width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+    background:var(--brand-gradient);color:#fff;
+  }
+  .spinner{width:34px;height:34px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-thumb{background:#BDBDBD;border-radius:3px;}
+
+  @media (max-width:760px){
+    .sidebar{width:100%;max-width:none;position:absolute;inset:0;z-index:5;}
+    .sidebar.hide-mobile{display:none;}
+    .chat-main{position:absolute;inset:0;}
+    .chat-main.hide-mobile{display:none;}
+    .back-btn{display:flex !important;}
+    .chat-item-menu-btn{display:none !important;}
+  }
+  .back-btn{display:none;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="loading-screen" id="bootLoading">
+    <div class="spinner"></div>
+    <div style="font-size:13.5px;">Memuat Obrolin...</div>
+  </div>
+</div>
+
+<script>
+/* ====================== KONFIGURASI SUPABASE ======================
+  1. Buat project baru di https://supabase.com/dashboard
+  2. Settings -> API -> isi SUPABASE_URL & SUPABASE_ANON_KEY di bawah
+  3. Authentication -> Providers -> Email (aktifkan) & Google (opsional, isi client id/secret dari Google Cloud Console)
+  4. Authentication -> URL Configuration -> tambahkan Redirect URL sesuai domain hosting-mu
+  5. Jalankan SQL schema yang ada di file schema.sql (dikirim terpisah) di SQL Editor
+=====================================================================*/
+const SUPABASE_URL = "https://ndpzdcllygmzamftxxud.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Q15o6j8nAqzJ7BzIZKOrcg_Fe-cwpYV";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let state = {
+  user: null,
+  profile: null,
+  conversations: [],
+  archivedConversations: [],
+  activeConv: null,
+  messages: [],
+  allUsersCache: [],
+  nicknames: {},
+  onlineUserIds: new Set(),
+  msgChannel: null,
+  convChannel: null,
+  presenceChannel: null,
+};
+
+const app = document.getElementById('app');
+
+/* ---------------- helpers ---------------- */
+function esc(str){
+  const d = document.createElement('div');
+  d.textContent = str ?? '';
+  return d.innerHTML;
+}
+function initials(name){
+  if(!name) return '?';
+  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDay(ts){
+  const d = new Date(ts);
+  const today = new Date();
+  const yest = new Date(); yest.setDate(today.getDate()-1);
+  if(d.toDateString()===today.toDateString()) return 'Hari ini';
+  if(d.toDateString()===yest.toDateString()) return 'Kemarin';
+  return d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+}
+function fmtListTime(ts){
+  const d = new Date(ts);
+  const today = new Date();
+  if(d.toDateString()===today.toDateString()) return fmtTime(ts);
+  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2600);
+}
+function avatarColor(seed){
+  return `linear-gradient(135deg, hsl(${(seed*47)%360} 60% 45%), hsl(${(seed*47+40)%360} 60% 40%))`;
+}
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    await onLoggedIn(session.user);
+  } else {
+    renderAuth('login');
+  }
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event === 'SIGNED_IN' && session && !state.user){
+      onLoggedIn(session.user);
+    }
+    if(event === 'SIGNED_OUT'){
+      state = { user:null, profile:null, conversations:[], archivedConversations:[], activeConv:null, messages:[], allUsersCache:[], nicknames:{}, onlineUserIds:new Set(), msgChannel:null, convChannel:null, presenceChannel:null };
+      renderAuth('login');
+    }
+  });
+}
+
+async function onLoggedIn(user){
+  state.user = user;
+  let { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if(!profile){
+    const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0];
+    const { data: newProfile } = await sb.from('profiles').insert({
+      id: user.id, email: user.email, display_name: displayName, avatar_url: user.user_metadata?.avatar_url || null
+    }).select().single();
+    profile = newProfile;
+  }
+  state.profile = profile;
+  renderChatApp();
+  await loadNicknames();
+  await loadConversations();
+  subscribeRealtime();
+  requestNotificationPermission();
+  cleanupOldMessages();
+}
+
+const VAPID_PUBLIC_KEY = "BNwIS5Kldab95Uw1rli7vnNBv-14OUF6zdeJLFRyhi8FNV4CX0iWYvBHjVEz98ht55_rhaaliE4H7XSxj_v4qNg";
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function requestNotificationPermission(){
+  if(!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(Notification.permission === 'default'){
+    const perm = await Notification.requestPermission().catch(()=>'denied');
+    if(perm !== 'granted') return;
+  }
+  if(Notification.permission === 'granted'){
+    subscribeToPush();
+  }
+}
+
+async function subscribeToPush(){
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const json = sub.toJSON();
+    await sb.from('push_subscriptions').upsert({
+      user_id: state.user.id,
+      endpoint: json.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth
+    }, { onConflict: 'endpoint' });
+  } catch(err){
+    console.error('Gagal subscribe push:', err);
+  }
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', (event)=>{
+    if(event.data?.type === 'open-conversation' && event.data.conversationId){
+      openConversation(event.data.conversationId);
+    }
+  });
+}
+
+async function cleanupOldMessages(){
+  try{
+    const cutoff = new Date(Date.now() - 7*24*60*60*1000).toISOString();
+    await sb.from('messages').delete().lt('created_at', cutoff);
+  } catch(err){
+    console.error('Gagal bersihin pesan lama:', err);
+  }
+}
+
+function notifyIncomingMessage(conv, msg){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const isChatOpenAndFocused = !document.hidden && state.activeConv && state.activeConv.id === msg.conversation_id;
+  if(isChatOpenAndFocused) return;
+  const senderProfile = (conv.members||[]).find(p=>p && p.id===msg.sender_id);
+  const senderName = conv.is_group ? displayNameFor(senderProfile) : convDisplayName(conv);
+  const bodyText = msg.type === 'image' ? '📷 Foto' : msg.type === 'video' ? '🎥 Video' : msg.type === 'audio' ? '🎤 Pesan suara' : msg.content;
+  try{
+    const notif = new Notification(senderName, { body: bodyText, icon: '/icon-192.png', badge: '/icon-192.png' });
+    notif.onclick = ()=>{
+      window.focus();
+      openConversation(conv.id);
+      notif.close();
+    };
+  } catch(err){ console.error(err); }
+}
+
+async function loadNicknames(){
+  const { data, error } = await sb.from('contact_nicknames').select('contact_id, nickname').eq('owner_id', state.user.id);
+  if(error){ console.error(error); return; }
+  state.nicknames = {};
+  (data||[]).forEach(row=>{ state.nicknames[row.contact_id] = row.nickname; });
+}
+
+function displayNameFor(profile){
+  if(!profile) return 'Pengguna';
+  return state.nicknames[profile.id] || profile.display_name || profile.email;
+}
+
+/* ==================== AUTH SCREEN ==================== */
+const TURNSTILE_SITE_KEY = '0x4AAAAAADvm9J4zzwDOjyzJ';
+let turnstileWidgetId = null;
+let turnstileToken = null;
+
+function mountTurnstile(){
+  const container = document.getElementById('turnstileWidget');
+  if(!container) return;
+  if(!window.turnstile){
+    // script belum kelar dimuat, coba lagi sebentar
+    setTimeout(mountTurnstile, 250);
+    return;
+  }
+  turnstileToken = null;
+  turnstileWidgetId = window.turnstile.render(container, {
+    sitekey: TURNSTILE_SITE_KEY,
+    callback: (token)=>{ turnstileToken = token; },
+    'expired-callback': ()=>{ turnstileToken = null; },
+    'error-callback': ()=>{ turnstileToken = null; }
+  });
+}
+
+function resetTurnstile(){
+  turnstileToken = null;
+  if(window.turnstile && turnstileWidgetId !== null){
+    window.turnstile.reset(turnstileWidgetId);
+  }
+}
+
+function renderAuth(mode){
+  app.innerHTML = `
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24" width="28" height="28"><path fill="#fff" d="M12 2C6.48 2 2 6.02 2 11c0 2.61 1.28 4.95 3.35 6.6-.09.86-.42 2.24-1.35 3.4 0 0 2.06-.19 3.87-1.42.98.29 2.03.42 3.13.42 5.52 0 10-4.02 10-9S17.52 2 12 2zm-4.5 9.75a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm4.5 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm4.5 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>
+      </div>
+      <h1>Obrolin</h1>
+      <p class="sub">${mode==='login' ? 'Masuk untuk mulai chatting' : 'Buat akun baru'}</p>
+      <div class="auth-err" id="authErr"></div>
+      <div id="authFields">
+        ${mode==='register' ? `
+        <div class="field">
+          <label>Nama tampilan</label>
+          <input id="regName" type="text" placeholder="Nama kamu" autocomplete="name">
+        </div>` : ''}
+        <div class="field">
+          <label>Email</label>
+          <input id="authEmail" type="email" placeholder="kamu@email.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="authPass" type="password" placeholder="••••••••" autocomplete="${mode==='login'?'current-password':'new-password'}">
+        </div>
+      </div>
+      <div id="turnstileWidget" style="margin-bottom:14px;"></div>
+      <button class="btn-primary" id="authSubmitBtn">${mode==='login' ? 'Masuk' : 'Daftar'}</button>
+      <div class="divider">atau</div>
+      <button class="btn-google" id="googleBtn">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.72c-.18-.54-.28-1.12-.28-1.72s.1-1.18.28-1.72V4.95H.96C.35 6.17 0 7.55 0 9s.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+        Lanjutkan dengan Google
+      </button>
+      <div class="auth-switch">
+        ${mode==='login'
+          ? `Belum punya akun? <a id="toRegister">Daftar</a>`
+          : `Sudah punya akun? <a id="toLogin">Masuk</a>`}
+      </div>
+    </div>
+  </div>`;
+
+  mountTurnstile();
+
+  document.getElementById('googleBtn').onclick = async ()=>{
+    const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.href } });
+    if(error) showAuthErr(error.message);
+  };
+  const toReg = document.getElementById('toRegister');
+  if(toReg) toReg.onclick = ()=>renderAuth('register');
+  const toLog = document.getElementById('toLogin');
+  if(toLog) toLog.onclick = ()=>renderAuth('login');
+
+  document.getElementById('authSubmitBtn').onclick = async ()=>{
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value;
+    const btn = document.getElementById('authSubmitBtn');
+    if(!email || !pass){ showAuthErr('Email dan password wajib diisi.'); return; }
+    if(!turnstileToken){ showAuthErr('Mohon selesaikan verifikasi captcha dulu.'); return; }
+    btn.disabled = true; btn.textContent = 'Memproses...';
+    if(mode === 'login'){
+      const { error } = await sb.auth.signInWithPassword({ email, password: pass, options:{ captchaToken: turnstileToken } });
+      resetTurnstile();
+      if(error){ showAuthErr(error.message); btn.disabled=false; btn.textContent='Masuk'; }
+    } else {
+      const name = document.getElementById('regName').value.trim() || email.split('@')[0];
+      const { data, error } = await sb.auth.signUp({ email, password: pass, options:{ data:{ full_name: name }, captchaToken: turnstileToken } });
+      resetTurnstile();
+      if(error){ showAuthErr(error.message); btn.disabled=false; btn.textContent='Daftar'; return; }
+      if(data.user && !data.session){
+        showAuthErr('');
+        showToast('Cek email kamu untuk konfirmasi akun.');
+        btn.disabled=false; btn.textContent='Daftar';
+      }
+    }
+  };
+}
+function showAuthErr(msg){
+  const el = document.getElementById('authErr');
+  if(!msg){ el.style.display='none'; return; }
+  el.style.display='block'; el.textContent = msg;
+}
+
+/* ==================== MAIN CHAT APP ==================== */
+function renderChatApp(){
+  app.innerHTML = `
+  <div class="chat-app">
+    <div class="sidebar" id="sidebar">
+      <div class="sb-header">
+        <div class="avatar" id="myAvatar" title="Profil"></div>
+        <div class="sb-header-actions">
+          <button class="icon-btn" id="newChatBtn" title="Chat baru">
+            <svg viewBox="0 0 24 24"><path d="M20.1 3.9a3.2 3.2 0 0 0-4.53 0L4.4 15.06a1 1 0 0 0-.26.46l-1.1 4.4a1 1 0 0 0 1.21 1.21l4.4-1.1a1 1 0 0 0 .46-.26L20.1 8.44a3.2 3.2 0 0 0 0-4.54zM7.9 18.02l-2.55.64.64-2.55L15.44 6.66l1.9 1.9L7.9 18.02z"/></svg>
+          </button>
+          <button class="icon-btn" id="logoutBtn" title="Keluar">
+            <svg viewBox="0 0 24 24"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9a1 1 0 0 0-1 1v4h2V5h7v14h-7v-3H10v4a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sb-search">
+        <div class="sb-search-box">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19l-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>
+          <input id="chatSearchInput" placeholder="Cari atau mulai chat baru">
+        </div>
+      </div>
+      <div class="chat-list" id="chatList"></div>
+    </div>
+    <div class="chat-main" id="chatMain">
+      <div class="chat-placeholder" id="chatPlaceholder">
+        <svg viewBox="0 0 303 172" fill="none"><defs><linearGradient id="phGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#405DE6"/><stop offset="30%" stop-color="#833AB4"/><stop offset="55%" stop-color="#C13584"/><stop offset="75%" stop-color="#E1306C"/><stop offset="100%" stop-color="#F77737"/></linearGradient></defs><circle cx="151" cy="86" r="80" fill="#FBE4F0"/><path d="M90 60h123v75a10 10 0 0 1-10 10h-84l-29 20V80a10 10 0 0 1 10-10z" fill="#fff" stroke="url(#phGrad)" stroke-width="3"/></svg>
+        <h2>Obrolin</h2>
+        <p>Kirim dan terima pesan tanpa harus buka HP. Pilih chat di sebelah kiri atau mulai obrolan baru untuk memulai.</p>
+      </div>
+    </div>
+  </div>`;
+
+  updateMyAvatarUI();
+  document.getElementById('myAvatar').onclick = openProfileModal;
+
+  document.getElementById('newChatBtn').onclick = openNewChatModal;
+  document.getElementById('logoutBtn').onclick = async ()=>{ await sb.auth.signOut(); };
+  document.getElementById('chatSearchInput').oninput = (e)=>renderChatList(e.target.value);
+}
+
+function updateMyAvatarUI(){
+  const myAvatarEl = document.getElementById('myAvatar');
+  if(!myAvatarEl) return;
+  const myName = state.profile.display_name || state.profile.email;
+  if(state.profile.avatar_url){
+    myAvatarEl.style.background = '';
+    myAvatarEl.innerHTML = `<img src="${esc(state.profile.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    myAvatarEl.style.background = avatarColor(hashStr(state.user.id));
+    myAvatarEl.textContent = initials(myName);
+  }
+}
+
+function hashStr(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) % 997; }
+  return Math.abs(h);
+}
+
+/* ---------------- conversations ---------------- */
+async function loadConversations(){
+  const { data: memberRows, error } = await sb
+    .from('conversation_members')
+    .select('conversation_id, conversations(id, is_group, name, created_at, created_by)')
+    .eq('user_id', state.user.id);
+
+  if(error){ console.error(error); return; }
+
+  const convs = [];
+  for(const row of memberRows){
+    const conv = row.conversations;
+    if(!conv) continue;
+    conv.members = [];
+    conv.lastMessage = null;
+    convs.push(conv);
+  }
+
+  // load members for each conversation (for naming 1-1 chats + avatars)
+  const convIds = convs.map(c=>c.id);
+  if(convIds.length){
+    const { data: allMembers, error: memErr } = await sb
+      .from('conversation_members')
+      .select('conversation_id, user_id')
+      .in('conversation_id', convIds);
+    if(memErr) console.error('Gagal ambil conversation_members:', memErr);
+
+    const userIds = [...new Set((allMembers||[]).map(m=>m.user_id))];
+    let profilesById = {};
+    if(userIds.length){
+      const { data: profs, error: profErr } = await sb
+        .from('profiles')
+        .select('id, display_name, email, avatar_url')
+        .in('id', userIds);
+      if(profErr) console.error('Gagal ambil profiles:', profErr);
+      (profs||[]).forEach(p=>{ profilesById[p.id] = p; });
+    }
+
+    for(const c of convs){
+      c.members = (allMembers||[])
+        .filter(m=>m.conversation_id===c.id)
+        .map(m=>profilesById[m.user_id])
+        .filter(Boolean);
+    }
+
+    const { data: lastMsgs } = await sb
+      .from('messages')
+      .select('conversation_id, content, created_at, sender_id')
+      .in('conversation_id', convIds)
+      .order('created_at', { ascending:false });
+    for(const c of convs){
+      c.lastMessage = (lastMsgs||[]).find(m=>m.conversation_id===c.id) || null;
+    }
+  }
+
+  // load per-user prefs (pin, arsip, hapus)
+  let prefsById = {};
+  if(convs.length){
+    const { data: prefs, error: prefsErr } = await sb
+      .from('conversation_prefs')
+      .select('conversation_id, pinned, archived, hidden_at')
+      .eq('owner_id', state.user.id)
+      .in('conversation_id', convs.map(c=>c.id));
+    if(prefsErr) console.error('Gagal ambil conversation_prefs:', prefsErr);
+    (prefs||[]).forEach(p=>{ prefsById[p.conversation_id] = p; });
+  }
+  for(const c of convs){
+    const pr = prefsById[c.id];
+    c.pinned = pr?.pinned || false;
+    c.archived = pr?.archived || false;
+    c.hiddenAt = pr?.hidden_at || null;
+  }
+
+  // chat yang dihapus baru beneran hilang kalau belum ada pesan baru setelah dihapus
+  const visible = convs.filter(c=>{
+    if(!c.hiddenAt) return true;
+    const lastTime = c.lastMessage?.created_at || c.created_at;
+    return new Date(lastTime) > new Date(c.hiddenAt);
+  });
+
+  visible.sort((a,b)=>{
+    if(a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    const ta = a.lastMessage?.created_at || a.created_at;
+    const tb = b.lastMessage?.created_at || b.created_at;
+    return new Date(tb) - new Date(ta);
+  });
+
+  state.conversations = visible.filter(c=>!c.archived);
+  state.archivedConversations = visible.filter(c=>c.archived);
+  renderChatList();
+}
+
+function otherMember(conv){
+  return (conv.members||[]).find(m=>m && m.id !== state.user.id) || null;
+}
+function convDisplayName(conv){
+  if(conv.is_group) return conv.name || 'Grup';
+  const other = otherMember(conv);
+  return displayNameFor(other);
+}
+function avatarInner(profile, fallbackInitials){
+  if(profile && profile.avatar_url){
+    return `<img src="${esc(profile.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">`;
+  }
+  return esc(fallbackInitials);
+}
+function convAvatarInitials(conv){
+  if(conv.is_group) return (conv.name||'G').trim()[0].toUpperCase();
+  const other = (conv.members||[]).find(m=>m && m.id !== state.user.id);
+  return initials(other?.display_name || other?.email);
+}
+
+function renderChatList(filter=''){
+  const list = document.getElementById('chatList');
+  if(!list) return;
+  const f = filter.trim().toLowerCase();
+  const filtered = state.conversations.filter(c=>{
+    if(!f) return true;
+    return convDisplayName(c).toLowerCase().includes(f);
+  });
+
+  const archivedCount = (state.archivedConversations||[]).length;
+  const archiveBanner = archivedCount ? `
+    <div class="chat-item" id="archiveBannerBtn" style="cursor:pointer;">
+      <div class="avatar" style="background:var(--brand-gradient);">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M20.54 5.23l-1.39-1.68A1.5 1.5 0 0 0 18 3H6a1.5 1.5 0 0 0-1.15.55L3.46 5.23A2 2 0 0 0 3 6.5V19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.5a2 2 0 0 0-.46-1.27zM6.24 5h11.52l.6.72H5.64zM19 19H5V8h14zm-9-6h4a1 1 0 0 0 0-2h-4a1 1 0 0 0 0 2z"/></svg>
+      </div>
+      <div class="chat-item-body">
+        <div class="chat-item-name">Chat diarsipkan</div>
+        <div class="chat-item-msg">${archivedCount} chat</div>
+      </div>
+    </div>` : '';
+
+  if(!filtered.length){
+    list.innerHTML = archiveBanner + `<div class="empty-list">${state.conversations.length ? 'Tidak ada hasil.' : 'Belum ada chat. Klik ikon pensil di pojok kanan atas untuk mulai obrolan baru.'}</div>`;
+    const bannerEl = document.getElementById('archiveBannerBtn');
+    if(bannerEl) bannerEl.onclick = openArchivedModal;
+    return;
+  }
+
+  list.innerHTML = archiveBanner + filtered.map(c=>{
+    const name = convDisplayName(c);
+    const last = c.lastMessage;
+    let preview = 'Belum ada pesan';
+    if(last){
+      const senderP = (c.members||[]).find(m=>m&&m.id===last.sender_id);
+      const prefix = last.sender_id === state.user.id ? 'Kamu: ' : (c.is_group ? (displayNameFor(senderP).split(' ')[0] + ': ') : '');
+      preview = last.deleted_for_everyone ? (prefix + 'Pesan ini telah dihapus') : (prefix + last.content);
+    }
+    const time = last ? fmtListTime(last.created_at) : '';
+    const active = state.activeConv && state.activeConv.id === c.id ? 'active' : '';
+    const other = otherMember(c);
+    const avatarBg = (!c.is_group && other?.avatar_url) ? '' : `background:${avatarColor(hashStr(c.id))}`;
+    const pinIcon = c.pinned ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="#8A7480" style="flex-shrink:0;margin-left:4px;"><path d="M16 3l-1.5 1.5L16 6l-4 4-5-1-1 1 4 4-5 5 5-5 4 4 1-1-1-5 4-4 1.5 1.5L18 3l-2 0z"/></svg>` : '';
+    return `
+    <div class="chat-item ${active}" data-id="${c.id}">
+      <div class="avatar-wrap">
+        <div class="avatar" style="${avatarBg}">${!c.is_group ? avatarInner(other, convAvatarInitials(c)) : esc(convAvatarInitials(c))}</div>
+        ${isConvOnline(c) ? '<span class="online-dot"></span>' : ''}
+      </div>
+      <div class="chat-item-body">
+        <div class="chat-item-top">
+          <div class="chat-item-name">${esc(name)}</div>
+          <div style="display:flex;align-items:center;flex-shrink:0;">
+            <div class="chat-item-time">${time}</div>
+            ${pinIcon}
+          </div>
+        </div>
+        <div class="chat-item-msg">${esc(preview)}</div>
+      </div>
+      <button class="icon-btn chat-item-menu-btn" data-menu-id="${c.id}" title="Opsi">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+
+  const bannerEl = document.getElementById('archiveBannerBtn');
+  if(bannerEl) bannerEl.onclick = openArchivedModal;
+
+  list.querySelectorAll('.chat-item[data-id]').forEach(el=>{
+    let pressTimer = null;
+    let longPressFired = false;
+
+    el.onclick = (e)=>{
+      if(e.target.closest('.chat-item-menu-btn')) return;
+      if(longPressFired){ longPressFired = false; return; }
+      openConversation(el.dataset.id);
+    };
+
+    const getConv = ()=> state.conversations.find(c=>c.id===el.dataset.id) || (state.archivedConversations||[]).find(c=>c.id===el.dataset.id);
+
+    el.addEventListener('touchstart', ()=>{
+      longPressFired = false;
+      pressTimer = setTimeout(()=>{
+        longPressFired = true;
+        if(navigator.vibrate) navigator.vibrate(15);
+        const conv = getConv();
+        if(conv) openChatOptionsModal(conv);
+      }, 480);
+    }, { passive:true });
+    const cancelPress = ()=>{ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } };
+    el.addEventListener('touchend', cancelPress);
+    el.addEventListener('touchmove', cancelPress);
+    el.addEventListener('touchcancel', cancelPress);
+  });
+  list.querySelectorAll('.chat-item-menu-btn').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const conv = state.conversations.find(c=>c.id===btn.dataset.menuId) || (state.archivedConversations||[]).find(c=>c.id===btn.dataset.menuId);
+      if(conv) openChatOptionsModal(conv);
+    };
+  });
+}
+
+async function openConversation(convId){
+  const conv = state.conversations.find(c=>c.id === convId) || (state.archivedConversations||[]).find(c=>c.id === convId);
+  if(!conv) return;
+  state.activeConv = conv;
+  renderChatList(document.getElementById('chatSearchInput')?.value || '');
+  renderChatHeaderAndMessages();
+
+  const { data: msgs, error } = await sb
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', convId)
+    .order('created_at', { ascending:true });
+  if(error){ console.error(error); return; }
+
+  let hiddenIds = new Set();
+  if((msgs||[]).length){
+    const { data: deletions } = await sb
+      .from('message_deletions')
+      .select('message_id')
+      .eq('owner_id', state.user.id)
+      .in('message_id', msgs.map(m=>m.id));
+    hiddenIds = new Set((deletions||[]).map(d=>d.message_id));
+  }
+  state.messages = (msgs||[]).filter(m=>!hiddenIds.has(m.id));
+  renderMessages();
+}
+
+function renderChatHeaderAndMessages(){
+  const conv = state.activeConv;
+  const chatMain = document.getElementById('chatMain');
+  const name = convDisplayName(conv);
+  const sub = conv.is_group
+    ? (conv.members||[]).map(m=>m && displayNameFor(m).split(' ')[0]).filter(Boolean).join(', ')
+    : (isConvOnline(conv) ? 'online' : 'offline');
+  const other = otherMember(conv);
+  const avatarBg = (!conv.is_group && other?.avatar_url) ? '' : `background:${avatarColor(hashStr(conv.id))}`;
+
+  chatMain.innerHTML = `
+    <div class="chat-header">
+      <button class="icon-btn back-btn" id="backBtn">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg>
+      </button>
+      <div class="avatar-wrap">
+        <div class="avatar" style="${avatarBg}">${!conv.is_group ? avatarInner(other, convAvatarInitials(conv)) : esc(convAvatarInitials(conv))}</div>
+        ${!conv.is_group ? `<span class="online-dot" style="display:${isConvOnline(conv)?'block':'none'};"></span>` : ''}
+      </div>
+      <div class="chat-header-info" id="chatHeaderInfo">
+        <div class="chat-header-name">${esc(name)}</div>
+        <div class="chat-header-sub">${esc(sub)}</div>
+      </div>
+    </div>
+    <div class="messages-area" id="messagesArea"></div>
+    <div class="composer" id="composerNormal">
+      <button class="icon-btn" id="attachImageBtn" title="Kirim foto">
+        <svg viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      </button>
+      <button class="icon-btn" id="attachVideoBtn" title="Kirim video (maks 1 menit)">
+        <svg viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"/></svg>
+      </button>
+      <input id="msgInput" placeholder="Ketik pesan" autocomplete="off">
+      <button class="icon-btn" id="micBtn" title="Rekam pesan suara">
+        <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg>
+      </button>
+      <button class="send-btn" id="sendBtn">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+      <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
+      <input type="file" id="videoFileInput" accept="video/*" style="display:none;">
+    </div>
+    <div class="composer" id="composerRecording" style="display:none;">
+      <div class="rec-dot"></div>
+      <span id="recTimer" style="font-size:13.5px;color:var(--wa-text-secondary);flex:1;">0:00</span>
+      <button class="btn-sm ghost" id="cancelRecBtn">Batal</button>
+      <button class="send-btn" id="stopRecBtn" title="Kirim">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>`;
+
+  document.getElementById('chatHeaderInfo').onclick = ()=>openChatInfoModal(conv);
+
+  const backBtn = document.getElementById('backBtn');
+  if(backBtn) backBtn.onclick = ()=>{
+    document.getElementById('sidebar').classList.remove('hide-mobile');
+    document.getElementById('chatMain').classList.add('hide-mobile');
+  };
+  document.getElementById('sidebar')?.classList.add('hide-mobile');
+  document.getElementById('chatMain')?.classList.remove('hide-mobile');
+
+  const input = document.getElementById('msgInput');
+  const send = ()=>sendMessage();
+  document.getElementById('sendBtn').onclick = send;
+  input.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } };
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+  if(!isTouchDevice) input.focus();
+
+  document.getElementById('attachImageBtn').onclick = ()=>document.getElementById('imageFileInput').click();
+  document.getElementById('imageFileInput').onchange = (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(file) handleImageUpload(file);
+  };
+  document.getElementById('attachVideoBtn').onclick = ()=>document.getElementById('videoFileInput').click();
+  document.getElementById('videoFileInput').onchange = (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(file) handleVideoUpload(file);
+  };
+  document.getElementById('micBtn').onclick = startVoiceRecording;
+  document.getElementById('cancelRecBtn').onclick = cancelVoiceRecording;
+  document.getElementById('stopRecBtn').onclick = stopVoiceRecordingAndSend;
+}
+
+function renderMessages(){
+  const area = document.getElementById('messagesArea');
+  if(!area) return;
+  const conv = state.activeConv;
+  let html = '';
+  let lastDay = null;
+  for(const m of state.messages){
+    const day = fmtDay(m.created_at);
+    if(day !== lastDay){
+      html += `<div class="day-sep"><span>${day}</span></div>`;
+      lastDay = day;
+    }
+    const isOut = m.sender_id === state.user.id;
+    const senderProfile = (conv.members||[]).find(p=>p && p.id===m.sender_id);
+    const senderName = conv.is_group && !isOut ? `<div class="sender-name">${esc(displayNameFor(senderProfile))}</div>` : '';
+    const menuBtn = !m.deleted_for_everyone ? `
+        <button class="msg-menu-btn" data-msg-id="${m.id}" title="Opsi pesan">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>` : '';
+    html += `
+      <div class="msg-row ${isOut?'out':'in'}">
+        <div class="bubble ${isOut?'out':'in'}">
+          ${menuBtn}
+          ${senderName}
+          ${renderMessageBody(m)}
+          <span class="msg-time">${fmtTime(m.created_at)}</span>
+        </div>
+      </div>`;
+  }
+  area.innerHTML = html;
+  area.scrollTop = area.scrollHeight;
+
+  area.querySelectorAll('[data-lightbox-src]').forEach(el=>{
+    el.onclick = ()=>openLightbox(el.dataset.lightboxSrc);
+  });
+  area.querySelectorAll('.msg-menu-btn').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const msg = state.messages.find(m=>m.id === btn.dataset.msgId);
+      if(msg) openMessageOptionsModal(msg);
+    };
+  });
+}
+
+function renderMessageBody(m){
+  if(m.deleted_for_everyone){
+    return `<span class="msg-text" style="font-style:italic;color:var(--wa-text-secondary);display:flex;align-items:center;gap:5px;">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M4.93 4.93l14.14 14.14-1.41 1.41L3.51 6.34zM12 4a8 8 0 0 1 8 8c0 1.06-.24 2.06-.66 2.96l1.47 1.47A9.97 9.97 0 0 0 22 12c0-5.52-4.48-10-10-10-1.28 0-2.5.24-3.63.67L9.9 4.2A7.9 7.9 0 0 1 12 4zm-8.87.87A9.97 9.97 0 0 0 2 12c0 5.52 4.48 10 10 10 1.28 0 2.5-.24 3.63-.67l-1.53-1.53A7.9 7.9 0 0 1 12 20a8 8 0 0 1-8-8c0-1.06.24-2.06.66-2.96z"/></svg>
+      Pesan ini telah dihapus
+    </span>`;
+  }
+  if(m.type === 'image'){
+    return `<img src="${esc(m.media_url)}" data-lightbox-src="${esc(m.media_url)}" style="max-width:260px;max-height:320px;border-radius:8px;display:block;cursor:pointer;object-fit:cover;">`;
+  }
+  if(m.type === 'video'){
+    return `<video src="${esc(m.media_url)}" controls preload="metadata" style="max-width:260px;max-height:320px;border-radius:8px;display:block;"></video>`;
+  }
+  if(m.type === 'audio'){
+    return `<div style="display:flex;align-items:center;gap:8px;min-width:200px;">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--wa-teal-green)" style="flex-shrink:0;"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/></svg>
+      <audio src="${esc(m.media_url)}" controls style="height:36px;max-width:200px;"></audio>
+    </div>`;
+  }
+  return `<span class="msg-text">${esc(m.content)}</span>`;
+}
+
+function openLightbox(src){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.background = 'rgba(0,0,0,.85)';
+  overlay.innerHTML = `<img src="${esc(src)}" style="max-width:92vw;max-height:92vh;border-radius:6px;object-fit:contain;">`;
+  overlay.onclick = ()=>overlay.remove();
+  document.body.appendChild(overlay);
+}
+
+async function sendMessage(){
+  const input = document.getElementById('msgInput');
+  const content = input.value.trim();
+  if(!content || !state.activeConv) return;
+  input.value = '';
+  const { error } = await sb.from('messages').insert({
+    conversation_id: state.activeConv.id,
+    sender_id: state.user.id,
+    content,
+    type: 'text'
+  });
+  if(error){ showToast('Gagal kirim pesan: ' + error.message); }
+}
+
+/* ==================== UPLOAD HELPERS (foto / video / voice note) ==================== */
+async function uploadChatMedia(path, blob, contentType){
+  const { error } = await sb.storage.from('chat-media').upload(path, blob, { contentType, upsert:false });
+  if(error) throw error;
+  const { data } = sb.storage.from('chat-media').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function compressImageToBlob(file, maxSize=1280, quality=0.72){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=>reject(new Error('Gagal membaca file gambar.'));
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onerror = ()=>reject(new Error('File bukan gambar yang valid.'));
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > height){ if(width > maxSize){ height *= maxSize/width; width = maxSize; } }
+        else { if(height > maxSize){ width *= maxSize/height; height = maxSize; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob=>{
+          if(!blob) { reject(new Error('Gagal kompres gambar.')); return; }
+          resolve(blob);
+        }, 'image/jpeg', quality);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImageUpload(file){
+  showToast('Mengompres & mengirim foto...');
+  try{
+    const blob = await compressImageToBlob(file);
+    const path = `images/${state.activeConv.id}/${crypto.randomUUID()}.jpg`;
+    const url = await uploadChatMedia(path, blob, 'image/jpeg');
+    const { error } = await sb.from('messages').insert({
+      conversation_id: state.activeConv.id,
+      sender_id: state.user.id,
+      content: '📷 Foto',
+      type: 'image',
+      media_url: url,
+      media_meta: { size: blob.size }
+    });
+    if(error) throw error;
+  } catch(err){
+    console.error(err);
+    showToast('Gagal kirim foto: ' + err.message);
+  }
+}
+
+function compressVideoFile(file, maxDurationSec=60, maxWidth=640, videoBitsPerSecond=700000){
+  return new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = url; video.muted = false; video.playsInline = true;
+    video.onloadedmetadata = async ()=>{
+      if(video.duration > maxDurationSec + 0.5){
+        URL.revokeObjectURL(url);
+        reject(new Error(`Video maksimal ${maxDurationSec} detik (punya kamu ${Math.round(video.duration)} detik).`));
+        return;
+      }
+      const canSupportCompression = !!(canvasCaptureStreamSupported() && window.MediaRecorder && video.captureStream);
+      if(!canSupportCompression){
+        URL.revokeObjectURL(url);
+        resolve({ blob: file, duration: video.duration, compressed:false });
+        return;
+      }
+      try{
+        const scale = Math.min(1, maxWidth / video.videoWidth);
+        const w = Math.round(video.videoWidth * scale) || video.videoWidth;
+        const h = Math.round(video.videoHeight * scale) || video.videoHeight;
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        const canvasStream = canvas.captureStream(24);
+
+        let combinedStream = canvasStream;
+        try{
+          const srcStream = video.captureStream();
+          const audioTracks = srcStream.getAudioTracks();
+          if(audioTracks.length) combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
+        } catch(e){ /* lanjut tanpa audio kalau gagal */ }
+
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+        const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond });
+        const chunks = [];
+        recorder.ondataavailable = (e)=>{ if(e.data.size>0) chunks.push(e.data); };
+        recorder.onstop = ()=>{
+          URL.revokeObjectURL(url);
+          resolve({ blob: new Blob(chunks, {type:'video/webm'}), duration: video.duration, compressed:true });
+        };
+        recorder.onerror = ()=>{
+          URL.revokeObjectURL(url);
+          resolve({ blob: file, duration: video.duration, compressed:false });
+        };
+
+        let drawing = true;
+        function drawFrame(){
+          if(!drawing) return;
+          ctx.drawImage(video, 0, 0, w, h);
+          requestAnimationFrame(drawFrame);
+        }
+        video.onended = ()=>{ drawing = false; setTimeout(()=>recorder.stop(), 150); };
+        recorder.start();
+        video.currentTime = 0;
+        await video.play();
+        drawFrame();
+      } catch(err){
+        URL.revokeObjectURL(url);
+        resolve({ blob: file, duration: video.duration, compressed:false });
+      }
+    };
+    video.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('Gagal membaca file video.')); };
+  });
+}
+
+function canvasCaptureStreamSupported(){
+  const c = document.createElement('canvas');
+  return typeof c.captureStream === 'function';
+}
+
+async function handleVideoUpload(file){
+  showToast('Mengompres video, mohon tunggu...');
+  try{
+    const result = await compressVideoFile(file);
+    const path = `videos/${state.activeConv.id}/${crypto.randomUUID()}.webm`;
+    const contentType = result.blob.type || 'video/webm';
+    const url = await uploadChatMedia(path, result.blob, contentType);
+    const { error } = await sb.from('messages').insert({
+      conversation_id: state.activeConv.id,
+      sender_id: state.user.id,
+      content: '🎥 Video',
+      type: 'video',
+      media_url: url,
+      media_meta: { duration: result.duration, size: result.blob.size, compressed: result.compressed }
+    });
+    if(error) throw error;
+    if(!result.compressed) showToast('Video dikirim (kompresi tidak didukung browser ini).');
+  } catch(err){
+    console.error(err);
+    showToast('Gagal kirim video: ' + err.message);
+  }
+}
+
+/* ==================== VOICE NOTE ==================== */
+let voiceRecorder = null;
+let voiceChunks = [];
+let voiceStream = null;
+let voiceTimerInterval = null;
+let voiceStartTime = null;
+
+async function startVoiceRecording(){
+  try{
+    voiceStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  } catch(err){
+    showToast('Gagal akses mikrofon: ' + err.message);
+    return;
+  }
+  voiceChunks = [];
+  const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+  voiceRecorder = mimeType ? new MediaRecorder(voiceStream, { mimeType }) : new MediaRecorder(voiceStream);
+  voiceRecorder.ondataavailable = (e)=>{ if(e.data.size>0) voiceChunks.push(e.data); };
+  voiceRecorder.start();
+  voiceStartTime = Date.now();
+
+  document.getElementById('composerNormal').style.display = 'none';
+  document.getElementById('composerRecording').style.display = 'flex';
+  const timerEl = document.getElementById('recTimer');
+  voiceTimerInterval = setInterval(()=>{
+    const secs = Math.floor((Date.now()-voiceStartTime)/1000);
+    const m = Math.floor(secs/60), s = secs%60;
+    timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 250);
+}
+
+function stopVoiceStreamTracks(){
+  if(voiceStream){ voiceStream.getTracks().forEach(t=>t.stop()); voiceStream = null; }
+  if(voiceTimerInterval){ clearInterval(voiceTimerInterval); voiceTimerInterval = null; }
+}
+
+function cancelVoiceRecording(){
+  if(voiceRecorder && voiceRecorder.state !== 'inactive'){
+    voiceRecorder.onstop = null;
+    voiceRecorder.stop();
+  }
+  stopVoiceStreamTracks();
+  const normalEl = document.getElementById('composerNormal');
+  const recEl = document.getElementById('composerRecording');
+  if(normalEl) normalEl.style.display = 'flex';
+  if(recEl) recEl.style.display = 'none';
+}
+
+function stopVoiceRecordingAndSend(){
+  if(!voiceRecorder || voiceRecorder.state === 'inactive') return;
+  const durationSec = (Date.now() - voiceStartTime) / 1000;
+  voiceRecorder.onstop = async ()=>{
+    stopVoiceStreamTracks();
+    const normalEl = document.getElementById('composerNormal');
+    const recEl = document.getElementById('composerRecording');
+    if(normalEl) normalEl.style.display = 'flex';
+    if(recEl) recEl.style.display = 'none';
+
+    if(durationSec < 1){ showToast('Rekaman terlalu pendek.'); return; }
+    try{
+      const blob = new Blob(voiceChunks, { type: voiceRecorder.mimeType || 'audio/webm' });
+      const ext = (blob.type.includes('mp4')) ? 'm4a' : 'webm';
+      const path = `voice/${state.activeConv.id}/${crypto.randomUUID()}.${ext}`;
+      const url = await uploadChatMedia(path, blob, blob.type || 'audio/webm');
+      const { error } = await sb.from('messages').insert({
+        conversation_id: state.activeConv.id,
+        sender_id: state.user.id,
+        content: '🎤 Pesan suara',
+        type: 'audio',
+        media_url: url,
+        media_meta: { duration: durationSec, size: blob.size }
+      });
+      if(error) throw error;
+    } catch(err){
+      console.error(err);
+      showToast('Gagal kirim pesan suara: ' + err.message);
+    }
+  };
+  voiceRecorder.stop();
+}
+
+/* ---------------- realtime ---------------- */
+function subscribeRealtime(){
+  if(state.msgChannel) sb.removeChannel(state.msgChannel);
+  state.msgChannel = sb.channel('messages-realtime')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, (payload)=>{
+      const msg = payload.new;
+      const conv = state.conversations.find(c=>c.id === msg.conversation_id);
+      if(!conv) { loadConversations(); return; }
+      conv.lastMessage = msg;
+      state.conversations.sort((a,b)=>{
+        const ta = a.lastMessage?.created_at || a.created_at;
+        const tb = b.lastMessage?.created_at || b.created_at;
+        return new Date(tb) - new Date(ta);
+      });
+      renderChatList(document.getElementById('chatSearchInput')?.value || '');
+      if(state.activeConv && state.activeConv.id === msg.conversation_id){
+        state.messages.push(msg);
+        renderMessages();
+      } else if(msg.sender_id !== state.user.id){
+        showToast(`Pesan baru dari ${convDisplayName(conv)}`);
+      }
+    })
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'messages' }, (payload)=>{
+      const msg = payload.new;
+      if(state.activeConv && state.activeConv.id === msg.conversation_id){
+        const idx = state.messages.findIndex(m=>m.id === msg.id);
+        if(idx >= 0){
+          state.messages[idx] = msg;
+          renderMessages();
+        }
+      }
+    })
+    .subscribe();
+
+  if(state.convChannel) sb.removeChannel(state.convChannel);
+  state.convChannel = sb.channel('conv-members-realtime')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'conversation_members', filter:`user_id=eq.${state.user.id}` }, ()=>{
+      loadConversations();
+    })
+    .subscribe();
+
+  if(state.presenceChannel) sb.removeChannel(state.presenceChannel);
+  const presenceChannel = sb.channel('presence-global', { config: { presence: { key: state.user.id } } });
+  presenceChannel
+    .on('presence', { event:'sync' }, ()=>{
+      state.onlineUserIds = new Set(Object.keys(presenceChannel.presenceState()));
+      renderChatList(document.getElementById('chatSearchInput')?.value || '');
+      updateActiveHeaderOnlineStatus();
+    })
+    .subscribe(async (status)=>{
+      if(status === 'SUBSCRIBED'){
+        await presenceChannel.track({ online_at: new Date().toISOString() });
+      }
+    });
+  state.presenceChannel = presenceChannel;
+}
+
+function isConvOnline(conv){
+  if(!conv) return false;
+  return (conv.members||[]).some(m=>m && m.id !== state.user.id && state.onlineUserIds.has(m.id));
+}
+
+function updateActiveHeaderOnlineStatus(){
+  const conv = state.activeConv;
+  if(!conv || conv.is_group) return;
+  const subEl = document.querySelector('#chatHeaderInfo .chat-header-sub');
+  if(subEl) subEl.textContent = isConvOnline(conv) ? 'online' : 'offline';
+  const dotEl = document.querySelector('.chat-header .online-dot');
+  if(dotEl) dotEl.style.display = isConvOnline(conv) ? 'block' : 'none';
+}
+
+/* ==================== NEW CHAT / GROUP MODAL ==================== */
+let modalState = { tab:'direct', selectedUsers:[], searchResults:[] };
+
+function openNewChatModal(){
+  modalState = { tab:'direct', selectedUsers:[], searchResults:[] };
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modalOverlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Chat baru</h3>
+        <button class="icon-btn" id="closeModalBtn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="tabs">
+          <button class="tab-btn active" id="tabDirect">Chat pribadi</button>
+          <button class="tab-btn" id="tabGroup">Buat grup</button>
+        </div>
+        <div id="groupNameWrap" style="display:none;margin-bottom:10px;">
+          <input id="groupNameInput" placeholder="Nama grup" style="width:100%;padding:10px 12px;border:1.5px solid var(--wa-border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
+        </div>
+        <div class="chips-wrap" id="chipsWrap"></div>
+        <div class="field" style="margin-bottom:10px;">
+          <input id="userSearchInput" placeholder="Cari berdasarkan nama pengguna" style="width:100%;padding:10px 12px;border:1.5px solid var(--wa-border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
+        </div>
+        <div id="userResults"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-sm ghost" id="cancelModalBtn">Batal</button>
+        <button class="btn-sm solid" id="confirmModalBtn" disabled>Mulai chat</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  document.getElementById('closeModalBtn').onclick = closeModal;
+  document.getElementById('cancelModalBtn').onclick = closeModal;
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+
+  document.getElementById('tabDirect').onclick = ()=>switchModalTab('direct');
+  document.getElementById('tabGroup').onclick = ()=>switchModalTab('group');
+
+  const searchInput = document.getElementById('userSearchInput');
+  let debounce;
+  searchInput.oninput = ()=>{
+    clearTimeout(debounce);
+    debounce = setTimeout(()=>searchUsers(searchInput.value.trim()), 300);
+  };
+
+  document.getElementById('confirmModalBtn').onclick = confirmModalAction;
+  updateConfirmBtn();
+  loadSuggestedUsers();
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay')?.remove();
+}
+
+function switchModalTab(tab){
+  modalState.tab = tab;
+  document.getElementById('tabDirect').classList.toggle('active', tab==='direct');
+  document.getElementById('tabGroup').classList.toggle('active', tab==='group');
+  document.getElementById('groupNameWrap').style.display = tab==='group' ? 'block' : 'none';
+  document.getElementById('confirmModalBtn').textContent = tab==='group' ? 'Buat grup' : 'Mulai chat';
+  updateConfirmBtn();
+  const searchInput = document.getElementById('userSearchInput');
+  if(searchInput && !searchInput.value.trim()) loadSuggestedUsers();
+}
+
+function renderUserPickResults(users, label){
+  const resultsEl = document.getElementById('userResults');
+  if(!resultsEl) return;
+  if(!users.length){
+    resultsEl.innerHTML = label ? `<div class="empty-list">Belum ada saran kontak buat sekarang.</div>` : `<div class="empty-list">Tidak ada user dengan email tersebut.</div>`;
+    return;
+  }
+  const heading = label ? `<div style="font-size:12px;font-weight:600;color:var(--wa-text-secondary);text-transform:uppercase;letter-spacing:.03em;margin:2px 0 8px;">${esc(label)}</div>` : '';
+  resultsEl.innerHTML = heading + users.map(u=>{
+    const sel = modalState.selectedUsers.some(s=>s.id===u.id);
+    return `
+    <div class="user-pick-item ${sel?'selected':''}" data-id="${u.id}">
+      <div class="avatar small" style="${u.avatar_url?'':`background:${avatarColor(hashStr(u.id))}`}">${avatarInner(u, initials(u.display_name||u.email))}</div>
+      <div>
+        <div class="name">${esc(u.display_name||u.email)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  resultsEl.querySelectorAll('.user-pick-item').forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.dataset.id;
+      const user = users.find(u=>u.id===id);
+      toggleUserSelect(user);
+    };
+  });
+}
+
+async function loadSuggestedUsers(){
+  if(modalState.tab !== 'direct'){
+    // buat grup juga boleh liat saran, tapi label beda dikit gak masalah, tetap tampilkan
+  }
+  const resultsEl = document.getElementById('userResults');
+  if(!resultsEl) return;
+  resultsEl.innerHTML = `<div class="empty-list">Memuat saran...</div>`;
+
+  // kecualikan kontak yang udah pernah 1-1 chat
+  const { data: myRows } = await sb.from('conversation_members').select('conversation_id').eq('user_id', state.user.id);
+  const myConvIds = (myRows||[]).map(r=>r.conversation_id);
+  let excludeIds = new Set([state.user.id]);
+  if(myConvIds.length){
+    const { data: memberRows } = await sb.from('conversation_members').select('conversation_id, user_id').in('conversation_id', myConvIds);
+    (memberRows||[]).forEach(r=>excludeIds.add(r.user_id));
+  }
+
+  const { data: allProfiles, error } = await sb
+    .from('profiles')
+    .select('id, display_name, email, avatar_url, created_at')
+    .order('created_at', { ascending:false })
+    .limit(30);
+  if(error){ resultsEl.innerHTML = `<div class="empty-list">Gagal memuat saran.</div>`; return; }
+  const suggested = (allProfiles||[]).filter(u=>!excludeIds.has(u.id)).slice(0, 8);
+  renderUserPickResults(suggested, 'Disarankan untukmu');
+}
+
+async function searchUsers(query){
+  if(!query){ loadSuggestedUsers(); return; }
+  const { data, error } = await sb
+    .from('profiles')
+    .select('id, display_name, email, avatar_url')
+    .ilike('display_name', `%${query}%`)
+    .neq('id', state.user.id)
+    .limit(10);
+  if(error){ document.getElementById('userResults').innerHTML = `<div class="empty-list">Gagal mencari.</div>`; return; }
+  renderUserPickResults(data||[], null);
+}
+
+function toggleUserSelect(user){
+  const idx = modalState.selectedUsers.findIndex(s=>s.id===user.id);
+  if(idx >= 0){
+    if(modalState.tab === 'direct'){ modalState.selectedUsers = []; }
+    else modalState.selectedUsers.splice(idx,1);
+  } else {
+    if(modalState.tab === 'direct') modalState.selectedUsers = [user];
+    else modalState.selectedUsers.push(user);
+  }
+  renderChips();
+  const q = document.getElementById('userSearchInput').value.trim();
+  if(q) searchUsers(q); else loadSuggestedUsers();
+  updateConfirmBtn();
+}
+
+function renderChips(){
+  const wrap = document.getElementById('chipsWrap');
+  wrap.innerHTML = modalState.selectedUsers.map(u=>`
+    <span class="chip" data-id="${u.id}">${esc(u.display_name||u.email)} <button data-remove="${u.id}">×</button></span>
+  `).join('');
+  wrap.querySelectorAll('button[data-remove]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.remove;
+      const user = modalState.selectedUsers.find(u=>u.id===id);
+      toggleUserSelect(user);
+    };
+  });
+}
+
+function updateConfirmBtn(){
+  const btn = document.getElementById('confirmModalBtn');
+  if(!btn) return;
+  if(modalState.tab === 'direct'){
+    btn.disabled = modalState.selectedUsers.length !== 1;
+  } else {
+    const nameOk = document.getElementById('groupNameInput')?.value.trim().length > 0;
+    btn.disabled = !(modalState.selectedUsers.length >= 1 && nameOk);
+  }
+}
+
+document.addEventListener('input', (e)=>{
+  if(e.target && e.target.id === 'groupNameInput') updateConfirmBtn();
+});
+
+async function confirmModalAction(){
+  const btn = document.getElementById('confirmModalBtn');
+  btn.disabled = true; btn.textContent = 'Memproses...';
+  try{
+    if(modalState.tab === 'direct'){
+      const other = modalState.selectedUsers[0];
+
+      // cek langsung ke DB apakah udah pernah ada chat 1-1 sama orang ini (jangan cuma andalin cache lokal)
+      let existingId = null;
+      const { data: myRows } = await sb.from('conversation_members').select('conversation_id').eq('user_id', state.user.id);
+      const myConvIds = (myRows||[]).map(r=>r.conversation_id);
+      if(myConvIds.length){
+        const { data: sharedRows } = await sb.from('conversation_members').select('conversation_id').eq('user_id', other.id).in('conversation_id', myConvIds);
+        const sharedIds = (sharedRows||[]).map(r=>r.conversation_id);
+        if(sharedIds.length){
+          const { data: directConv } = await sb.from('conversations').select('id').in('id', sharedIds).eq('is_group', false).limit(1).maybeSingle();
+          if(directConv) existingId = directConv.id;
+        }
+      }
+      if(existingId){
+        closeModal();
+        await loadConversations();
+        await openConversation(existingId);
+        return;
+      }
+      const { data: conv, error: convErr } = await sb.from('conversations').insert({ is_group:false, created_by: state.user.id }).select().single();
+      if(convErr) throw convErr;
+      const { error: memErr } = await sb.from('conversation_members').insert([
+        { conversation_id: conv.id, user_id: state.user.id },
+        { conversation_id: conv.id, user_id: other.id }
+      ]);
+      if(memErr) throw memErr;
+      closeModal();
+      await loadConversations();
+      await openConversation(conv.id);
+    } else {
+      const groupName = document.getElementById('groupNameInput').value.trim();
+      const { data: conv, error: convErr } = await sb.from('conversations').insert({ is_group:true, name: groupName, created_by: state.user.id }).select().single();
+      if(convErr) throw convErr;
+      const rows = [{ conversation_id: conv.id, user_id: state.user.id }, ...modalState.selectedUsers.map(u=>({ conversation_id: conv.id, user_id: u.id }))];
+      const { error: memErr } = await sb.from('conversation_members').insert(rows);
+      if(memErr) throw memErr;
+      closeModal();
+      await loadConversations();
+      await openConversation(conv.id);
+    }
+  } catch(err){
+    showToast('Gagal: ' + err.message);
+    btn.disabled = false;
+  }
+}
+
+/* ==================== PROFILE MODAL ==================== */
+function resizeImageToDataUrl(file, maxSize=256, quality=0.82){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=>reject(new Error('Gagal membaca file.'));
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onerror = ()=>reject(new Error('File bukan gambar yang valid.'));
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > height){ if(width > maxSize){ height *= maxSize/width; width = maxSize; } }
+        else { if(height > maxSize){ width *= maxSize/height; height = maxSize; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function openProfileModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modalOverlay';
+  const p = state.profile;
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Profil saya</h3>
+        <button class="icon-btn" id="closeModalBtn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px;">
+          <div class="avatar" id="profileAvatarPreview" style="width:84px;height:84px;font-size:26px;${p.avatar_url?'':`background:${avatarColor(hashStr(state.user.id))}`}">${avatarInner(p, initials(p.display_name||p.email))}</div>
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
+          <button class="btn-sm ghost" id="pickAvatarBtn" style="border:1.5px solid var(--wa-border);">Ganti foto</button>
+        </div>
+        <div class="field">
+          <label>Nama pengguna</label>
+          <input id="profileNameInput" type="text" value="${esc(p.display_name||'')}" placeholder="Nama kamu">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="text" value="${esc(p.email)}" disabled style="opacity:.6;">
+        </div>
+        <button class="btn-sm" id="installAppBtn" style="display:${(deferredInstallPrompt && !isAppInstalled) ? 'flex' : 'none'};align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;background:var(--brand-gradient);color:#fff;padding:11px;">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="#fff"><path d="M12 2a1 1 0 0 1 1 1v10.17l3.29-3.29a1 1 0 1 1 1.42 1.41l-5 5a1 1 0 0 1-1.42 0l-5-5a1 1 0 1 1 1.42-1.41L11 13.17V3a1 1 0 0 1 1-1zM5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1z"/></svg>
+          Install Obrolin untuk Android
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-sm ghost" id="cancelModalBtn">Batal</button>
+        <button class="btn-sm solid" id="saveProfileBtn">Simpan</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  document.getElementById('closeModalBtn').onclick = closeModal;
+  document.getElementById('cancelModalBtn').onclick = closeModal;
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+  document.getElementById('installAppBtn').onclick = triggerInstallApp;
+
+  let pendingAvatarDataUrl = null;
+  const fileInput = document.getElementById('avatarFileInput');
+  document.getElementById('pickAvatarBtn').onclick = ()=>fileInput.click();
+  fileInput.onchange = async ()=>{
+    const file = fileInput.files[0];
+    if(!file) return;
+    try{
+      pendingAvatarDataUrl = await resizeImageToDataUrl(file);
+      const preview = document.getElementById('profileAvatarPreview');
+      preview.style.background = '';
+      preview.innerHTML = `<img src="${pendingAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+    } catch(err){
+      showToast('Gagal memproses gambar: ' + err.message);
+    }
+  };
+
+  document.getElementById('saveProfileBtn').onclick = async ()=>{
+    const btn = document.getElementById('saveProfileBtn');
+    const newName = document.getElementById('profileNameInput').value.trim();
+    if(!newName){ showToast('Nama tidak boleh kosong.'); return; }
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    try{
+      const updates = { display_name: newName };
+      if(pendingAvatarDataUrl) updates.avatar_url = pendingAvatarDataUrl;
+      const { data, error } = await sb
+        .from('profiles')
+        .update(updates)
+        .eq('id', state.user.id)
+        .select()
+        .maybeSingle();
+      if(error) throw error;
+      if(!data) throw new Error('Update tidak mengembalikan data. Kemungkinan diblokir RLS policy profiles_update_own — jalankan ulang SQL fix policy-nya.');
+      state.profile = data;
+      closeModal();
+      updateMyAvatarUI();
+      renderChatList(document.getElementById('chatSearchInput')?.value || '');
+      if(state.activeConv){
+        renderChatHeaderAndMessages();
+        renderMessages();
+      }
+      await loadConversations();
+      showToast('Profil diperbarui.');
+    } catch(err){
+      console.error('Gagal update profil:', err);
+      showToast('Gagal simpan: ' + (err.message || 'terjadi kesalahan tidak diketahui.'));
+      btn.disabled = false; btn.textContent = 'Simpan';
+    }
+  };
+}
+
+/* ==================== CHAT INFO / NICKNAME MODAL ==================== */
+function openChatInfoModal(conv){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modalOverlay';
+
+  if(!conv.is_group){
+    const other = otherMember(conv);
+    const currentNick = state.nicknames[other?.id] || '';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Info kontak</h3>
+          <button class="icon-btn" id="closeModalBtn">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:20px;">
+            <div class="avatar" style="width:76px;height:76px;font-size:24px;${other?.avatar_url?'':`background:${avatarColor(hashStr(conv.id))}`}">${avatarInner(other, convAvatarInitials(conv))}</div>
+            <div style="font-weight:600;font-size:16px;">${esc(other?.display_name || other?.email || 'Pengguna')}</div>
+          </div>
+          <div class="field">
+            <label>Nama panggilan (cuma kamu yang lihat)</label>
+            <input id="nicknameInput" type="text" value="${esc(currentNick)}" placeholder="${esc(other?.display_name||other?.email||'Nama panggilan')}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          ${currentNick ? `<button class="btn-sm ghost" id="removeNickBtn" style="color:var(--wa-danger);">Hapus panggilan</button>` : ''}
+          <button class="btn-sm ghost" id="cancelModalBtn">Batal</button>
+          <button class="btn-sm solid" id="saveNickBtn">Simpan</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    document.getElementById('closeModalBtn').onclick = closeModal;
+    document.getElementById('cancelModalBtn').onclick = closeModal;
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+
+    document.getElementById('saveNickBtn').onclick = async ()=>{
+      const val = document.getElementById('nicknameInput').value.trim();
+      if(!val){ showToast('Isi dulu nama panggilannya.'); return; }
+      const { error } = await sb.from('contact_nicknames').upsert({ owner_id: state.user.id, contact_id: other.id, nickname: val });
+      if(error){ showToast('Gagal simpan: ' + error.message); return; }
+      state.nicknames[other.id] = val;
+      closeModal();
+      renderChatList(document.getElementById('chatSearchInput')?.value || '');
+      renderChatHeaderAndMessages();
+      renderMessages();
+      showToast('Nama panggilan disimpan.');
+    };
+    const removeBtn = document.getElementById('removeNickBtn');
+    if(removeBtn) removeBtn.onclick = async ()=>{
+      const { error } = await sb.from('contact_nicknames').delete().eq('owner_id', state.user.id).eq('contact_id', other.id);
+      if(error){ showToast('Gagal hapus: ' + error.message); return; }
+      delete state.nicknames[other.id];
+      closeModal();
+      renderChatList(document.getElementById('chatSearchInput')?.value || '');
+      renderChatHeaderAndMessages();
+      renderMessages();
+      showToast('Nama panggilan dihapus.');
+    };
+  } else {
+    const membersHtml = (conv.members||[]).map(m=>{
+      if(!m) return '';
+      const isMe = m.id === state.user.id;
+      return `
+      <div class="user-pick-item" style="cursor:default;">
+        <div class="avatar small" style="${m.avatar_url?'':`background:${avatarColor(hashStr(m.id))}`}">${avatarInner(m, initials(m.display_name||m.email))}</div>
+        <div>
+          <div class="name">${esc(isMe ? 'Kamu' : displayNameFor(m))}</div>
+        </div>
+      </div>`;
+    }).join('');
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Info grup</h3>
+          <button class="icon-btn" id="closeModalBtn">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:16px;">
+            <div class="avatar" style="width:76px;height:76px;font-size:24px;background:${avatarColor(hashStr(conv.id))}">${esc(convAvatarInitials(conv))}</div>
+            <div style="font-weight:600;font-size:16px;">${esc(conv.name||'Grup')}</div>
+            <div style="font-size:13px;color:var(--wa-text-secondary);">${(conv.members||[]).length} anggota</div>
+          </div>
+          ${membersHtml}
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm solid" id="closeInfoBtn">Tutup</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('closeModalBtn').onclick = closeModal;
+    document.getElementById('closeInfoBtn').onclick = closeModal;
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+  }
+}
+
+/* ==================== CHAT OPTIONS (PIN / ARCHIVE / DELETE) ==================== */
+async function setConvPref(convId, patch){
+  const { error } = await sb.from('conversation_prefs').upsert({
+    owner_id: state.user.id,
+    conversation_id: convId,
+    ...patch
+  });
+  if(error){ showToast('Gagal: ' + error.message); return false; }
+  return true;
+}
+
+function openChatOptionsModal(conv){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modalOverlay';
+  const name = convDisplayName(conv);
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:340px;">
+      <div class="modal-header">
+        <h3>${esc(name)}</h3>
+        <button class="icon-btn" id="closeModalBtn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding:8px 12px;">
+        <div class="user-pick-item" id="optPin" style="cursor:pointer;">
+          <div class="name" style="font-size:14.5px;">${conv.pinned ? 'Lepas pin chat' : 'Pin chat'}</div>
+        </div>
+        <div class="user-pick-item" id="optArchive" style="cursor:pointer;">
+          <div class="name" style="font-size:14.5px;">${conv.archived ? 'Batalkan arsip' : 'Arsipkan chat'}</div>
+        </div>
+        <div class="user-pick-item" id="optDelete" style="cursor:pointer;">
+          <div class="name" style="font-size:14.5px;color:var(--wa-danger);">Hapus chat</div>
+        </div>
+        ${conv.is_group ? (conv.created_by === state.user.id ? `
+        <div class="user-pick-item" id="optDeleteGroup" style="cursor:pointer;">
+          <div class="name" style="font-size:14.5px;color:var(--wa-danger);">Hapus grup untuk semua orang</div>
+        </div>` : `
+        <div class="user-pick-item" id="optLeaveGroup" style="cursor:pointer;">
+          <div class="name" style="font-size:14.5px;color:var(--wa-danger);">Keluar dari grup</div>
+        </div>`) : ''}
+      </div>
+      <div class="modal-footer">
+        <button class="btn-sm ghost" id="cancelModalBtn">Batal</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('closeModalBtn').onclick = closeModal;
+  document.getElementById('cancelModalBtn').onclick = closeModal;
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+
+  document.getElementById('optPin').onclick = async ()=>{
+    const ok = await setConvPref(conv.id, { pinned: !conv.pinned, archived: conv.archived||false });
+    closeModal();
+    if(ok){ await loadConversations(); showToast(conv.pinned ? 'Pin dilepas.' : 'Chat dipin.'); }
+  };
+  document.getElementById('optArchive').onclick = async ()=>{
+    const ok = await setConvPref(conv.id, { archived: !conv.archived, pinned: conv.pinned||false });
+    closeModal();
+    if(ok){
+      if(state.activeConv && state.activeConv.id === conv.id){
+        state.activeConv = null;
+        renderChatApp();
+      }
+      await loadConversations();
+      showToast(conv.archived ? 'Chat dibatalkan dari arsip.' : 'Chat diarsipkan.');
+    }
+  };
+  document.getElementById('optDelete').onclick = async ()=>{
+    closeModal();
+    const confirmOverlay = document.createElement('div');
+    confirmOverlay.className = 'modal-overlay';
+    confirmOverlay.id = 'confirmDeleteOverlay';
+    confirmOverlay.innerHTML = `
+      <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><h3>Hapus chat?</h3></div>
+        <div class="modal-body">
+          <p style="font-size:13.5px;color:var(--wa-text-secondary);line-height:1.5;">
+            Chat dengan <b>${esc(name)}</b> akan hilang dari daftar kamu. Chat bakal muncul lagi otomatis kalau ada pesan baru masuk.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm ghost" id="cancelDeleteBtn">Batal</button>
+          <button class="btn-sm solid" id="confirmDeleteBtn" style="background:var(--wa-danger);">Hapus</button>
+        </div>
+      </div>`;
+    document.body.appendChild(confirmOverlay);
+    document.getElementById('cancelDeleteBtn').onclick = ()=>confirmOverlay.remove();
+    confirmOverlay.addEventListener('click', (e)=>{ if(e.target === confirmOverlay) confirmOverlay.remove(); });
+    document.getElementById('confirmDeleteBtn').onclick = async ()=>{
+      const ok = await setConvPref(conv.id, { hidden_at: new Date().toISOString(), pinned: false });
+      confirmOverlay.remove();
+      if(ok){
+        if(state.activeConv && state.activeConv.id === conv.id){
+          state.activeConv = null;
+          renderChatApp();
+        }
+        await loadConversations();
+        showToast('Chat dihapus.');
+      }
+    };
+  };
+
+  const optDeleteGroup = document.getElementById('optDeleteGroup');
+  if(optDeleteGroup) optDeleteGroup.onclick = ()=>{
+    closeModal();
+    const confirmOverlay = document.createElement('div');
+    confirmOverlay.className = 'modal-overlay';
+    confirmOverlay.innerHTML = `
+      <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><h3>Hapus grup?</h3></div>
+        <div class="modal-body">
+          <p style="font-size:13.5px;color:var(--wa-text-secondary);line-height:1.5;">
+            Grup <b>${esc(name)}</b> beserta semua pesannya bakal hilang buat <b>semua anggota</b>. Nggak bisa dibatalin.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm ghost" id="cancelDelGroupBtn">Batal</button>
+          <button class="btn-sm solid" id="confirmDelGroupBtn" style="background:var(--wa-danger);">Hapus grup</button>
+        </div>
+      </div>`;
+    document.body.appendChild(confirmOverlay);
+    document.getElementById('cancelDelGroupBtn').onclick = ()=>confirmOverlay.remove();
+    confirmOverlay.addEventListener('click', (e)=>{ if(e.target === confirmOverlay) confirmOverlay.remove(); });
+    document.getElementById('confirmDelGroupBtn').onclick = async ()=>{
+      const { error } = await sb.from('conversations').delete().eq('id', conv.id);
+      confirmOverlay.remove();
+      if(error){ showToast('Gagal hapus grup: ' + error.message); return; }
+      if(state.activeConv && state.activeConv.id === conv.id){
+        state.activeConv = null;
+        renderChatApp();
+      }
+      await loadConversations();
+      showToast('Grup dihapus untuk semua orang.');
+    };
+  };
+
+  const optLeaveGroup = document.getElementById('optLeaveGroup');
+  if(optLeaveGroup) optLeaveGroup.onclick = ()=>{
+    closeModal();
+    const confirmOverlay = document.createElement('div');
+    confirmOverlay.className = 'modal-overlay';
+    confirmOverlay.innerHTML = `
+      <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><h3>Keluar dari grup?</h3></div>
+        <div class="modal-body">
+          <p style="font-size:13.5px;color:var(--wa-text-secondary);line-height:1.5;">
+            Kamu bakal keluar dari <b>${esc(name)}</b> dan nggak bisa lihat chat ini lagi kecuali diundang ulang.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm ghost" id="cancelLeaveBtn">Batal</button>
+          <button class="btn-sm solid" id="confirmLeaveBtn" style="background:var(--wa-danger);">Keluar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(confirmOverlay);
+    document.getElementById('cancelLeaveBtn').onclick = ()=>confirmOverlay.remove();
+    confirmOverlay.addEventListener('click', (e)=>{ if(e.target === confirmOverlay) confirmOverlay.remove(); });
+    document.getElementById('confirmLeaveBtn').onclick = async ()=>{
+      const { error } = await sb.from('conversation_members').delete().eq('conversation_id', conv.id).eq('user_id', state.user.id);
+      confirmOverlay.remove();
+      if(error){ showToast('Gagal keluar grup: ' + error.message); return; }
+      if(state.activeConv && state.activeConv.id === conv.id){
+        state.activeConv = null;
+        renderChatApp();
+      }
+      await loadConversations();
+      showToast('Kamu keluar dari grup.');
+    };
+  };
+}
+
+function openArchivedModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modalOverlay';
+  const list = state.archivedConversations || [];
+  const itemsHtml = list.length ? list.map(c=>{
+    const other = otherMember(c);
+    const avatarBg = (!c.is_group && other?.avatar_url) ? '' : `background:${avatarColor(hashStr(c.id))}`;
+    return `
+    <div class="user-pick-item" data-open-archived="${c.id}" style="cursor:pointer;">
+      <div class="avatar small" style="${avatarBg}">${!c.is_group ? avatarInner(other, convAvatarInitials(c)) : esc(convAvatarInitials(c))}</div>
+      <div style="flex:1;">
+        <div class="name">${esc(convDisplayName(c))}</div>
+      </div>
+      <button class="btn-sm ghost" data-unarchive="${c.id}">Batal arsip</button>
+    </div>`;
+  }).join('') : `<div class="empty-list">Belum ada chat yang diarsipkan.</div>`;
+
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Chat diarsipkan</h3>
+        <button class="icon-btn" id="closeModalBtn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">${itemsHtml}</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('closeModalBtn').onclick = closeModal;
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+
+  overlay.querySelectorAll('[data-unarchive]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const ok = await setConvPref(btn.dataset.unarchive, { archived:false });
+      if(ok){ closeModal(); await loadConversations(); showToast('Chat dibatalkan dari arsip.'); }
+    };
+  });
+  overlay.querySelectorAll('[data-open-archived]').forEach(el=>{
+    el.onclick = async ()=>{
+      closeModal();
+      await openConversation(el.dataset.openArchived);
+    };
+  });
+}
+
+/* ==================== HAPUS PESAN ==================== */
+function openMessageOptionsModal(msg){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modalOverlay';
+  const isOwn = msg.sender_id === state.user.id;
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:320px;">
+      <div class="modal-header">
+        <h3>Opsi pesan</h3>
+        <button class="icon-btn" id="closeModalBtn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding:8px 12px;">
+        <div class="user-pick-item" id="optDeleteMe" style="cursor:pointer;">
+          <div class="name" style="font-size:14.5px;color:var(--wa-danger);">Hapus untuk saya</div>
+        </div>
+        ${isOwn ? `
+        <div class="user-pick-item" id="optDeleteAll" style="cursor:pointer;">
+          <div class="name" style="font-size:14.5px;color:var(--wa-danger);">Hapus untuk semua orang</div>
+        </div>` : ''}
+      </div>
+      <div class="modal-footer">
+        <button class="btn-sm ghost" id="cancelModalBtn">Batal</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('closeModalBtn').onclick = closeModal;
+  document.getElementById('cancelModalBtn').onclick = closeModal;
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+
+  document.getElementById('optDeleteMe').onclick = async ()=>{
+    closeModal();
+    const { error } = await sb.from('message_deletions').upsert({ owner_id: state.user.id, message_id: msg.id });
+    if(error){ showToast('Gagal hapus: ' + error.message); return; }
+    state.messages = state.messages.filter(m=>m.id !== msg.id);
+    renderMessages();
+    showToast('Pesan dihapus untuk kamu.');
+  };
+
+  const optAll = document.getElementById('optDeleteAll');
+  if(optAll) optAll.onclick = ()=>{
+    closeModal();
+    const confirmOverlay = document.createElement('div');
+    confirmOverlay.className = 'modal-overlay';
+    confirmOverlay.innerHTML = `
+      <div class="modal" style="max-width:320px;">
+        <div class="modal-header"><h3>Hapus untuk semua orang?</h3></div>
+        <div class="modal-body">
+          <p style="font-size:13.5px;color:var(--wa-text-secondary);line-height:1.5;">
+            Pesan ini bakal diganti jadi "Pesan ini telah dihapus" buat semua orang di chat ini. Nggak bisa dibatalin.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm ghost" id="cancelDeleteAllBtn">Batal</button>
+          <button class="btn-sm solid" id="confirmDeleteAllBtn" style="background:var(--wa-danger);">Hapus</button>
+        </div>
+      </div>`;
+    document.body.appendChild(confirmOverlay);
+    document.getElementById('cancelDeleteAllBtn').onclick = ()=>confirmOverlay.remove();
+    confirmOverlay.addEventListener('click', (e)=>{ if(e.target === confirmOverlay) confirmOverlay.remove(); });
+    document.getElementById('confirmDeleteAllBtn').onclick = async ()=>{
+      const { data, error } = await sb
+        .from('messages')
+        .update({ deleted_for_everyone:true, content:'Pesan ini telah dihapus', media_url:null, media_meta:null })
+        .eq('id', msg.id)
+        .eq('sender_id', state.user.id)
+        .select()
+        .maybeSingle();
+      confirmOverlay.remove();
+      if(error){ showToast('Gagal hapus: ' + error.message); return; }
+      if(data){
+        const idx = state.messages.findIndex(m=>m.id === msg.id);
+        if(idx >= 0) state.messages[idx] = data;
+        renderMessages();
+      }
+      showToast('Pesan dihapus untuk semua orang.');
+    };
+  };
+}
+
+/* ==================== PWA INSTALL (Android) ==================== */
+let deferredInstallPrompt = null;
+let isAppInstalled = false;
+
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('installAppBtn');
+  if(btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', ()=>{
+  isAppInstalled = true;
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('installAppBtn');
+  if(btn) btn.style.display = 'none';
+  showToast('Obrolin berhasil diinstal!');
+});
+if(window.matchMedia('(display-mode: standalone)').matches){
+  isAppInstalled = true;
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
+  });
+}
+async function triggerInstallApp(){
+  if(!deferredInstallPrompt){
+    showToast('App ini udah terinstal atau browser kamu belum support install langsung.');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if(outcome === 'accepted') showToast('Menginstal Obrolin...');
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('installAppBtn');
+  if(btn) btn.style.display = 'none';
+}
+
+/* ---------------- go ---------------- */
+boot();
+</script>
+</body>
+</html>
